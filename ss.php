@@ -1,0 +1,65 @@
+#!/usr/bin/php
+<?php
+require_once 'parser.php';
+
+if ($argc < 2) {
+	echo "Usage: ss [file]";
+	exit;
+}
+
+$options = getopt("o:", [], $rest_index);
+
+
+$filename = $argv[$rest_index];
+if (!file_exists($filename)) {
+	echo "file not found: $filename";
+	exit;
+}
+
+$input = file_get_contents($filename);
+$name = basename($filename);
+$name = substr($name, 0, strpos($name, '.'));
+
+$parser = new Parser($name, $input);
+try {
+	$ast = $parser->parse();
+} catch (\Exception $e) {
+	die("Parse error at " . $e->getMessage());
+}
+
+$o = $options['o'] ?? false;
+
+try {
+
+	if (!$o || $o == 'ast') {
+		//print_r($ast);
+	} elseif ($o == 'c') {
+		require_once 'target/c.php';
+		$code = new TargetC();
+		$code->generate($ast);
+		$outdir = 'out_c';
+
+	} elseif ($o == 'js') {
+		require_once 'target/js.php';
+		$code = new TargetJS();
+		$code->generate($ast);
+		$outdir = 'out_js';
+	}
+
+} catch (\Exception $e) {
+	die("Generation error at " . $e->getMessage());
+}
+
+$outdir = getcwd() . "/". $outdir;
+if (!is_dir($outdir)) {
+	@mkdir($outdir);
+}
+
+foreach ($code->output as $type => $files) {
+	foreach ($files as $name => $output) {
+		$file = sprintf("%s/%s", $outdir, $name);
+		file_put_contents($file, $output);
+	}
+}
+
+

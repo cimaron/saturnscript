@@ -1,0 +1,451 @@
+<?php
+require_once 'lexer.php';
+require_once 'parser/abstract.php';
+require_once 'parser/namespace.php';
+require_once 'parser/type.php';
+require_once 'parser/node.php';
+
+
+class Parser extends AbstractParser {
+
+	public $namespaces = [];
+	public $namespace;
+
+	/**
+	 *
+	 */
+	public function parse() {
+		return $this->parseGlobal();
+	}
+
+	/**
+	 *
+	 */
+	public function parseGlobal() {
+
+		$global = new Node('GLOBAL');
+		$global->setPosition(1, 1);
+
+		$this->ast = $global;
+		$this->symbols[] = [];
+
+		while ($token = $this->getToken()) {
+
+			if ($token->type == "PRE") {
+
+				if (!preg_match('/^include ["<](.+)[">]$/', $token->text, $matches)) {
+					die("Can't handle that yet");
+				}
+
+				$node = Node::fromToken($token, 'IMPORT');
+				$node->text = $matches[1];
+
+				/*
+				if (!isset($this->map[$node->text])) {
+					die(sprintf("Missing map for %s", $node->text));
+				}
+				*/
+
+				$node->text = $this->map[$node->text]->name;
+				$global->push($node);
+				continue;
+			}
+
+			if ($token->type == "NAMESPACE") {
+				$ns = $this->parseNamespace($this->ast);
+				$global->push($ns);
+				continue;
+			}
+
+			throw new \Exception("Parse error");
+
+		}
+
+		return $global;
+	}
+
+	/**
+	 * @return Node
+	 */
+	public function parseNamespace() {
+
+		$token = $this->getToken();
+
+		if ($token->type != "IDENTIFIER") {
+			$this->error("Expected identifer", $token);
+		}
+
+		if ($this->getToken()->type != '{') {
+			$this->error("Expected '{'");
+		}
+
+		$this->namespace = new NamespaceObject($token->text);
+		$this->namespaces[$this->namespace->name] = $this->namespace;
+
+		$nsNode = new Node('NAMESPACE', $token);
+
+		//Run a prepass to populate forward declarations
+		$prepass = new Prepass($this);
+		$prepass->processNamespace($this->namespace);
+
+		while ($declarations = $this->parseNsDeclaration()) {
+			foreach ($declarations as $declaration) {
+				$nsNode->push($declaration, 'namespace');
+			}
+		}
+
+		if ($this->getToken()->type != '}') {
+			$this->error("Expected '}'");
+		}
+
+		$nsNode->types = $this->namespace->types;
+		$nsNode->symbols = $this->namespace->symbols;
+
+		return $nsNode;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function parseNsDeclaration() {
+
+		$type = $this->getToken();
+		$node = Node::fromToken($type);
+
+		if ($type->type == "CONST") {
+			return $this->parseConstList();
+		}
+
+		if ($type->type == "LET") {
+			return $this->parseLetList();
+		}
+
+		if ($type->type == "FUNCTION") {
+			return $this->parseFunction();
+		}
+
+		if ($type->type == "CLASS") {
+			return [$this->parseClass()];
+		}
+
+		if ($type->type == '}') {
+			$this->push($type);
+			return false;
+		}
+
+		$this->error("Expected declaration", $type);
+	}
+
+	/**
+	 *
+	 */
+	public function parseConstList() {
+
+		$list = [];
+
+		do {
+			$list[] = $this->parseConst();
+			$token = $this->getToken();
+		} while ($token->type == ',');
+
+		if ($token->type != ";") {
+			$this->error("Expected ';'", $eq);
+		}
+
+		return $list;
+	}
+
+	/**
+	 *
+	 */
+	public function parseConst() {
+
+		$identifier = $this->getToken();
+		if ($identifier->type != "IDENTIFIER") {
+			$this->error("Expected identifier", $identifier);
+		}
+
+		if ($this->namespace->getSymbol($identifier->text, true)) {
+			$this->error("$identifier->text already defined", $identifier);
+		}
+
+		$eq = $this->getToken();
+		if ($eq->type != "=") {
+			$this->error("Expected '='", $eq);
+		}
+
+		$constNode = Node::fromToken($identifier, 'CONST');
+		//$node->text = $identifier->text;
+		$constNode->value = $this->parseValue();
+
+		//Add to symbol table
+		$this->namespace->addSymbol($constNode->text, $constNode);
+
+		return $constNode;
+	}
+
+	/**
+	 *
+	 */
+	public function parseLetList() {
+
+		$list = [];
+
+		do {
+			$list[] = $this->parseLet();
+			$token = $this->getToken();
+		} while ($token->type == ',');
+
+		if ($token->type != ";") {
+			$this->error("Expected ';'", $eq);
+		}
+
+		return $list;
+	}
+
+	/**
+	 *
+	 */
+	public function parseLet() {
+
+		$identifier = $this->getToken();
+		if ($identifier->type != "IDENTIFIER") {
+			$this->error("Expected identifier", $identifier);
+		}
+
+		if ($this->namespace->getSymbol($identifier->text, true)) {
+			$this->error("$identifier->text already defined", $identifier);
+		}
+
+		$letNode = Node::fromToken($identifier, 'LET');
+
+		$colon = $this->getToken();
+		if ($colon->type != ':') {
+			$this->error("Expected ':'", $next);
+		}
+
+		$type = $this->getToken();
+		if ($type->type == 'identifier') {
+			die("@todo implement types");
+		} elseif ($type->type == 'TYPE') {
+			$letNode->typedef = $type;
+		} else {
+			$this->error("Expected type", $type);
+		}
+
+		//Add to symbol table
+		$this->namespace->addSymbol($letNode->text, $letNode);
+
+		$next = $this->getToken();
+		if ($next->type == ";" || $next->type == ",") {
+			$this->push($next);
+			return $letNode;
+		}
+
+		if ($next->type != "=") {
+			$this->error("Expected '='", $next);
+		}
+
+		$letNode->value = $this->parseValue();
+
+		return $letNode;
+	}
+
+	/**
+	 *
+	 */
+	public function parseClass() {
+
+		$identifier = $this->getToken();
+		if ($identifier->type != "IDENTIFIER") {
+			$this->error("Expected identifier", $identifier);
+		}
+
+		if ($this->namespace->getSymbol($identifier->text, true)) {
+			$this->error("$identifier->text already defined", $identifier);
+		}
+
+		$open = $this->getToken();
+		if ($open->type != "{") {
+			$this->error("Expected '{'", $open);
+		}
+
+		$node = Node::fromToken($identifier, 'CLASS');
+
+		//Add to symbol table
+		$this->namespace->addSymbol($node->text, $node);
+		$type = new Type($node->text);
+
+			//Members
+			do {
+
+				$member = $this->getToken();
+				if ($member->type == "IDENTIFIER") {
+					$mnode = $this->parseMember($member);
+					$node->push($mnode);
+				}
+
+			} while ($member->type == "IDENTIFIER");
+
+		$this->namespace->addType($node->text);
+
+		$close = $member;
+		if ($close->type != "}") {
+			$this->error("Expected '}'", $close);
+		}
+
+		return $node;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseMember($ident) {
+
+		$node = Node::fromToken($ident);
+
+		$next = $this->getToken();
+
+		//switch to method
+		if ($next->type == "(") {
+			return $this->parseMethod($ident);
+		}
+
+		if ($next->type != ":") {
+			$this->error("Expected ':'", $next);
+		}
+
+		$type = $this->getToken();
+		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
+			$this->error("Expected type", $type);
+		}
+
+		if (!$this->namespace->getType($type->text)) {
+			$this->error("Expected type", $type);
+		}
+
+		$node->typedef = $type;
+
+		$semi = $this->getToken();
+		if ($semi->type != ';') {
+			$this->error("Expected ';'", $semi);
+		}
+
+		return $node;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseMethod($ident) {
+
+		$node = Node::fromToken($ident);
+
+		$node->params = $this->parseMethodParams();
+
+		$next = $this->getToken();
+		if ($next->type != ":") {
+			$this->error("Expected ':'", $next);
+		}
+
+		$type = $this->getToken();
+		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
+			$this->error("Expected type", $type);
+		}
+
+		if (!$this->namespace->getType($type->text)) {
+			$this->error("Expected type", $type);
+		}
+
+		$node->typedef = $type;
+
+		$next = $this->getToken();
+		if ($next->type != "{") {
+			$this->error("Expected '{'", $next);
+		}
+
+		//TODO FUNCTION BODY
+
+		$next = $this->getToken();
+		if ($next->type != "}") {
+			$this->error("Expected '}'", $next);
+		}
+
+		return $node;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseMethodParams() {
+
+		$params = [];
+
+		if ($this->peek()->type == ")") {
+			return $params;
+		}
+
+		do {
+			$paramNode = $this->parseMethodParam();
+			if ($paramNode) {
+				$params[] = $paramNode;
+			}
+			$token = $this->getToken();
+		} while ($token->type == ',');
+
+		if ($token->type != ')') {
+			$this->error("Expected ')'");
+		}
+
+		return $params;
+	}
+
+	/**
+	 *
+	 */
+	public function parseMethodParam() {
+
+		$ident = $this->getToken();
+		if ($ident->type != "IDENTIFIER") {
+			$this->error("Expected identifier", $ident);
+		}
+
+		$next = $this->getToken();
+		if ($next->type != ":") {
+			$this->error("Expected ':'", $next);
+		}
+
+		$type = $this->getToken();
+		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
+			$this->error("Expected type", $type);
+		}
+
+		if (!$this->namespace->getType($type->text)) {
+			$this->error("Expected type", $type);
+		}
+
+		$node = Node::fromToken($ident);
+
+		$node->typedef = $type;
+
+		return $node;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseValue() {
+
+		$value = $this->getToken();
+
+		if (!in_array($value->type, ['NUMBER', 'STRING'])) {
+			$this->error("Expected value", $value);
+		}
+
+		return $value;
+	}
+}
+
+
+require_once 'parser/prepass.php';
+
