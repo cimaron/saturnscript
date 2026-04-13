@@ -21,9 +21,7 @@ class Prepass extends Parser {
 			}
 		}
 
-		if ($this->getToken()->type != '}') {
-			$this->error("Expected '}'");
-		}
+		$this->expect("}");
 
 		$namespace->types = $this->namespace->types;
 	}
@@ -31,7 +29,13 @@ class Prepass extends Parser {
 	/**
 	 * 
 	 */
-	public function parseMember($ident) {
+	public function parseMember() {
+
+		$ident = $this->getToken();
+		if ($ident->type != 'IDENTIFIER') {
+			$this->push($ident);
+			return;
+		}
 
 		$node = Node::fromToken($ident);
 
@@ -39,6 +43,7 @@ class Prepass extends Parser {
 
 		//switch to method
 		if ($next->type == "(") {
+			$this->push($next);
 			return $this->parseMethod($ident);
 		}
 
@@ -53,10 +58,7 @@ class Prepass extends Parser {
 
 		$node->typedef = $type;
 
-		$semi = $this->getToken();
-		if ($semi->type != ';') {
-			$this->error("Expected ';'", $semi);
-		}
+		$this->expect(";");
 
 		return $node;
 	}

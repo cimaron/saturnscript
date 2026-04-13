@@ -70,33 +70,28 @@ class Parser extends AbstractParser {
 	public function parseNamespace() {
 
 		$token = $this->getToken();
-
 		if ($token->type != "IDENTIFIER") {
 			$this->error("Expected identifer", $token);
 		}
 
-		if ($this->getToken()->type != '{') {
-			$this->error("Expected '{'");
-		}
+		$this->expect("{");
 
-		$this->namespace = new NamespaceObject($token->text);
-		$this->namespaces[$this->namespace->name] = $this->namespace;
+			$this->namespace = new NamespaceObject($token->text);
+			$this->namespaces[$this->namespace->name] = $this->namespace;
 
-		$nsNode = new Node('NAMESPACE', $token);
+			$nsNode = new Node('NAMESPACE', $token);
 
-		//Run a prepass to populate forward declarations
-		$prepass = new Prepass($this);
-		$prepass->processNamespace($this->namespace);
+			//Run a prepass to populate forward declarations
+			$prepass = new Prepass($this);
+			$prepass->processNamespace($this->namespace);
 
-		while ($declarations = $this->parseNsDeclaration()) {
-			foreach ($declarations as $declaration) {
-				$nsNode->push($declaration, 'namespace');
+			while ($declarations = $this->parseNsDeclaration()) {
+				foreach ($declarations as $declaration) {
+					$nsNode->push($declaration, 'namespace');
+				}
 			}
-		}
 
-		if ($this->getToken()->type != '}') {
-			$this->error("Expected '}'");
-		}
+		$this->expect("}");
 
 		$nsNode->types = $this->namespace->types;
 		$nsNode->symbols = $this->namespace->symbols;
@@ -160,19 +155,13 @@ class Parser extends AbstractParser {
 	 */
 	public function parseConst() {
 
-		$identifier = $this->getToken();
-		if ($identifier->type != "IDENTIFIER") {
-			$this->error("Expected identifier", $identifier);
-		}
+		$identifier = $this->expect("IDENTIFIER");
 
 		if ($this->namespace->getSymbol($identifier->text, true)) {
 			$this->error("$identifier->text already defined", $identifier);
 		}
 
-		$eq = $this->getToken();
-		if ($eq->type != "=") {
-			$this->error("Expected '='", $eq);
-		}
+		$this->expect("=");
 
 		$constNode = Node::fromToken($identifier, 'CONST');
 		//$node->text = $identifier->text;
@@ -208,10 +197,7 @@ class Parser extends AbstractParser {
 	 */
 	public function parseLet() {
 
-		$identifier = $this->getToken();
-		if ($identifier->type != "IDENTIFIER") {
-			$this->error("Expected identifier", $identifier);
-		}
+		$identifier = $this->expect("IDENTIFIER");
 
 		if ($this->namespace->getSymbol($identifier->text, true)) {
 			$this->error("$identifier->text already defined", $identifier);
@@ -219,10 +205,7 @@ class Parser extends AbstractParser {
 
 		$letNode = Node::fromToken($identifier, 'LET');
 
-		$colon = $this->getToken();
-		if ($colon->type != ':') {
-			$this->error("Expected ':'", $next);
-		}
+		$this->expect(":");
 
 		$type = $this->getToken();
 		if ($type->type == 'identifier') {
@@ -256,43 +239,27 @@ class Parser extends AbstractParser {
 	 */
 	public function parseClass() {
 
-		$identifier = $this->getToken();
-		if ($identifier->type != "IDENTIFIER") {
-			$this->error("Expected identifier", $identifier);
-		}
+		$identifier = $this->expect("IDENTIFIER");
 
 		if ($this->namespace->getSymbol($identifier->text, true)) {
 			$this->error("$identifier->text already defined", $identifier);
 		}
 
-		$open = $this->getToken();
-		if ($open->type != "{") {
-			$this->error("Expected '{'", $open);
-		}
+		$this->expect("{");
 
-		$node = Node::fromToken($identifier, 'CLASS');
+			$node = Node::fromToken($identifier, 'CLASS');
 
-		//Add to symbol table
-		$this->namespace->addSymbol($node->text, $node);
-		$type = new Type($node->text);
+			//Add to symbol table
+			$this->namespace->addSymbol($node->text, $node);
+			$type = new Type($node->text);
 
-			//Members
-			do {
-
-				$member = $this->getToken();
-				if ($member->type == "IDENTIFIER") {
-					$mnode = $this->parseMember($member);
-					$node->push($mnode);
+				while ($member = $this->parseMember()) {
+					$node->push($member);
 				}
+			
+			$this->namespace->addType($node->text);
 
-			} while ($member->type == "IDENTIFIER");
-
-		$this->namespace->addType($node->text);
-
-		$close = $member;
-		if ($close->type != "}") {
-			$this->error("Expected '}'", $close);
-		}
+		$this->expect("}");
 
 		return $node;
 	}
@@ -300,7 +267,13 @@ class Parser extends AbstractParser {
 	/**
 	 * 
 	 */
-	public function parseMember($ident) {
+	public function parseMember() {
+
+		$ident = $this->getToken();
+		if ($ident->type != 'IDENTIFIER') {
+			$this->push($ident);
+			return;
+		}
 
 		$node = Node::fromToken($ident);
 
@@ -308,6 +281,7 @@ class Parser extends AbstractParser {
 
 		//switch to method
 		if ($next->type == "(") {
+			$this->push($next);
 			return $this->parseMethod($ident);
 		}
 
@@ -341,35 +315,29 @@ class Parser extends AbstractParser {
 
 		$node = Node::fromToken($ident);
 
-		$node->params = $this->parseMethodParams();
+		$this->expect("(");
 
-		$next = $this->getToken();
-		if ($next->type != ":") {
-			$this->error("Expected ':'", $next);
-		}
+			$node->params = $this->parseMethodParams();
 
-		$type = $this->getToken();
-		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
-			$this->error("Expected type", $type);
-		}
+		$this->expect(")");
+		$this->expect(":");
 
-		if (!$this->namespace->getType($type->text)) {
-			$this->error("Expected type", $type);
-		}
+			$type = $this->getToken();
+			if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
+				$this->error("Expected type", $type);
+			}
 
-		$node->typedef = $type;
+			if (!$this->namespace->getType($type->text)) {
+				$this->error("Expected type", $type);
+			}
 
-		$next = $this->getToken();
-		if ($next->type != "{") {
-			$this->error("Expected '{'", $next);
-		}
+			$node->typedef = $type;
 
-		//TODO FUNCTION BODY
+		$this->expect("{");
 
-		$next = $this->getToken();
-		if ($next->type != "}") {
-			$this->error("Expected '}'", $next);
-		}
+			$this->parseMethodBody($node);
+
+		$this->expect("}");
 
 		return $node;
 	}
@@ -393,8 +361,8 @@ class Parser extends AbstractParser {
 			$token = $this->getToken();
 		} while ($token->type == ',');
 
-		if ($token->type != ')') {
-			$this->error("Expected ')'");
+		if ($token->type == ')') {
+			$this->push($token);
 		}
 
 		return $params;

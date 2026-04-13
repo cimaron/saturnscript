@@ -54,6 +54,20 @@ class AbstractParser {
 		return $tok;
 	}
 
+	public function expect($type, $peek = false) {
+
+		$token = $this->getToken();
+		if ($token->type != $type) {
+			$this->error("Expected '$type'", $token);
+		}
+
+		if ($peek) {
+			$this->push($token);
+		}
+
+		return $token;
+	}
+
 	public function push($token) {
 		$this->stack[] = $token;
 	}
