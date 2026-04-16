@@ -54,6 +54,10 @@ class AbstractParser {
 		return $tok;
 	}
 
+	public function nextIs($type) {
+		return in_array($this->peek()->type, (array)$type);
+	}
+
 	public function expect($type, $peek = false) {
 
 		$token = $this->getToken();

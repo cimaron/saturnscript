@@ -31,25 +31,20 @@ class Prepass extends Parser {
 	 */
 	public function parseMember() {
 
-		$ident = $this->getToken();
-		if ($ident->type != 'IDENTIFIER') {
-			$this->push($ident);
-			return;
+		if (!$this->nextIs('IDENTIFIER')) {
+			return false;
 		}
 
+		$ident = $this->getToken();
 		$node = Node::fromToken($ident);
 
-		$next = $this->getToken();
-
 		//switch to method
-		if ($next->type == "(") {
-			$this->push($next);
-			return $this->parseMethod($ident);
+		if ($this->nextIs('(')) {
+			$this->push($ident);
+			return $this->parseMethod();
 		}
 
-		if ($next->type != ":") {
-			$this->error("Expected ':'", $next);
-		}
+		$this->expect(':');
 
 		$type = $this->getToken();
 		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
@@ -58,9 +53,10 @@ class Prepass extends Parser {
 
 		$node->typedef = $type;
 
-		$this->expect(";");
+		$this->expect(';');
 
 		return $node;
 	}
+
 }
 

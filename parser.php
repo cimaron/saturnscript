@@ -130,22 +130,20 @@ class Parser extends AbstractParser {
 	 */
 	public function parseConstList() {
 
-		if ($this->peek()->type != 'CONST') {
+		if (!$this->nextIs('CONST')) {
 			return false;
 		}
 
 		$this->getToken(); //consume CONST
 
-		$list = [];
-
-		do {
+		$list = [$this->parseConst()];
+	
+		while ($this->nextIs(',')) {
+			$this->getToken(); //Consume ','
 			$list[] = $this->parseConst();
-			$token = $this->getToken();
-		} while ($token->type == ',');
-
-		if ($token->type != ";") {
-			$this->error("Expected ';'", $eq);
 		}
+
+		$this->expect(';');
 
 		return $list;
 	}
@@ -178,22 +176,20 @@ class Parser extends AbstractParser {
 	 */
 	public function parseLetList() {
 
-		if ($this->peek()->type != 'LET') {
+		if (!$this->nextIs('LET')) {
 			return false;
 		}
 
 		$this->getToken(); //consume LET
 
-		$list = [];
-
-		do {
+		$list = [$this->parseLet()];
+	
+		while ($this->nextIs(',')) {
+			$this->getToken(); //Consume ','
 			$list[] = $this->parseLet();
-			$token = $this->getToken();
-		} while ($token->type == ',');
-
-		if ($token->type != ";") {
-			$this->error("Expected ';'", $eq);
 		}
+
+		$this->expect(';');
 
 		return $list;
 	}
@@ -245,7 +241,7 @@ class Parser extends AbstractParser {
 	 */
 	public function parseClass() {
 
-		if ($this->peek()->type != 'CLASS') {
+		if (!$this->nextIs('CLASS')) {
 			return false;
 		}
 
@@ -281,25 +277,20 @@ class Parser extends AbstractParser {
 	 */
 	public function parseMember() {
 
-		$ident = $this->getToken();
-		if ($ident->type != 'IDENTIFIER') {
-			$this->push($ident);
-			return;
+		if (!$this->nextIs('IDENTIFIER')) {
+			return false;
 		}
 
+		$ident = $this->getToken();
 		$node = Node::fromToken($ident);
 
-		$next = $this->getToken();
-
 		//switch to method
-		if ($next->type == "(") {
-			$this->push($next);
-			return $this->parseMethod($ident);
+		if ($this->nextIs('(')) {
+			$this->push($ident);
+			return $this->parseMethod();
 		}
 
-		if ($next->type != ":") {
-			$this->error("Expected ':'", $next);
-		}
+		$this->expect(':');
 
 		$type = $this->getToken();
 		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
@@ -312,10 +303,7 @@ class Parser extends AbstractParser {
 
 		$node->typedef = $type;
 
-		$semi = $this->getToken();
-		if ($semi->type != ';') {
-			$this->error("Expected ';'", $semi);
-		}
+		$this->expect(';');
 
 		return $node;
 	}
@@ -323,8 +311,9 @@ class Parser extends AbstractParser {
 	/**
 	 * 
 	 */
-	public function parseMethod($ident) {
+	public function parseMethod() {
 
+		$ident = $this->getToken();
 		$node = Node::fromToken($ident);
 
 		$this->expect("(");
@@ -361,20 +350,15 @@ class Parser extends AbstractParser {
 
 		$params = [];
 
-		if ($this->peek()->type == ")") {
+		if ($this->nextIs(')')) {
 			return $params;
 		}
 
-		do {
-			$paramNode = $this->parseMethodParam();
-			if ($paramNode) {
-				$params[] = $paramNode;
-			}
-			$token = $this->getToken();
-		} while ($token->type == ',');
-
-		if ($token->type == ')') {
-			$this->push($token);
+		$params[] = $this->parseMethodParam();
+	
+		while ($this->nextIs(',')) {
+			$this->getToken(); //Consume ','
+			$params[] = $this->parseMethodParam();
 		}
 
 		return $params;
@@ -385,15 +369,9 @@ class Parser extends AbstractParser {
 	 */
 	public function parseMethodParam() {
 
-		$ident = $this->getToken();
-		if ($ident->type != "IDENTIFIER") {
-			$this->error("Expected identifier", $ident);
-		}
+		$ident = $this->expect('IDENTIFIER');
 
-		$next = $this->getToken();
-		if ($next->type != ":") {
-			$this->error("Expected ':'", $next);
-		}
+		$this->expect(':');
 
 		$type = $this->getToken();
 		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
