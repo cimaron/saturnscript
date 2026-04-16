@@ -100,41 +100,41 @@ class Parser extends AbstractParser {
 	}
 
 	/**
-	 * @return array
+	 * @return array|false
 	 */
 	public function parseNsDeclaration() {
 
-		$type = $this->getToken();
-		$node = Node::fromToken($type);
-
-		if ($type->type == "CONST") {
-			return $this->parseConstList();
+		if ($const = $this->parseConstList()) {
+			return $const;
 		}
 
-		if ($type->type == "LET") {
-			return $this->parseLetList();
+		if ($lets = $this->parseLetList()) {
+			return $lets;
 		}
 
-		if ($type->type == "FUNCTION") {
-			return $this->parseFunction();
+		/*
+		if ($func = $this->parseFunction()) {
+			return $func;
+		}
+		*/
+
+		if ($class = $this->parseClass()) {
+			return [$class];
 		}
 
-		if ($type->type == "CLASS") {
-			return [$this->parseClass()];
-		}
-
-		if ($type->type == '}') {
-			$this->push($type);
-			return false;
-		}
-
-		$this->error("Expected declaration", $type);
+		return false;
 	}
 
 	/**
 	 *
 	 */
 	public function parseConstList() {
+
+		if ($this->peek()->type != 'CONST') {
+			return false;
+		}
+
+		$this->getToken(); //consume CONST
 
 		$list = [];
 
@@ -177,6 +177,12 @@ class Parser extends AbstractParser {
 	 *
 	 */
 	public function parseLetList() {
+
+		if ($this->peek()->type != 'LET') {
+			return false;
+		}
+
+		$this->getToken(); //consume LET
 
 		$list = [];
 
@@ -238,6 +244,12 @@ class Parser extends AbstractParser {
 	 *
 	 */
 	public function parseClass() {
+
+		if ($this->peek()->type != 'CLASS') {
+			return false;
+		}
+
+		$this->getToken(); //consume CLASS
 
 		$identifier = $this->expect("IDENTIFIER");
 
@@ -335,7 +347,7 @@ class Parser extends AbstractParser {
 
 		$this->expect("{");
 
-			$this->parseMethodBody($node);
+			//$this->parseMethodBody($node);
 
 		$this->expect("}");
 
