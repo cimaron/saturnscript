@@ -58,18 +58,13 @@ class AbstractParser {
 		return in_array($this->peek()->type, (array)$type);
 	}
 
-	public function expect($type, $peek = false) {
+	public function expect($type) {
 
-		$token = $this->getToken();
-		if ($token->type != $type) {
-			$this->error("Expected '$type'", $token);
+		if (!$this->nextIs($type)) {
+			$this->error("Expected '$type'", implode("', '", $type));
 		}
 
-		if ($peek) {
-			$this->push($token);
-		}
-
-		return $token;
+		return $this->getToken();
 	}
 
 	public function push($token) {
