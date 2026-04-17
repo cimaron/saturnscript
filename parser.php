@@ -163,7 +163,8 @@ class Parser extends AbstractParser {
 
 		$constNode = Node::fromToken($identifier, 'CONST');
 		//$node->text = $identifier->text;
-		$constNode->value = $this->parseValue();
+
+		$constNode->value = $this->expect(['NUMBER', 'STRING']);
 
 		//Add to symbol table
 		$this->namespace->addSymbol($constNode->text, $constNode);
@@ -336,7 +337,7 @@ class Parser extends AbstractParser {
 
 		$this->expect("{");
 
-			//$this->parseMethodBody($node);
+			$this->parseMethodBody($node);
 
 		$this->expect("}");
 
@@ -383,10 +384,53 @@ class Parser extends AbstractParser {
 		}
 
 		$node = Node::fromToken($ident);
-
 		$node->typedef = $type;
 
 		return $node;
+	}
+
+	/**
+	 *
+	 */
+	public function parseMethodBody($methodNode) {
+
+		foreach ($this->parseStatementList(true) as $statement) {
+			$methodNode->push($statement);
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function parseStatementList($allowScope = false) {
+
+		$list = [];
+
+		while ($statement = $this->parseStatement($allowScope)) {
+			$list[] = $statement;
+		}
+
+		return $list;
+	}
+
+	/**
+	 *
+	 */
+	public function parseStatement($allowScope = false) {
+
+		if ($ctrl = $this->parseControlStatement()) {
+			return $ctrl;
+		}
+
+		if ($allowScope && ($lets = $this->parseLetList())) {
+			$this->expect(';');
+			return $lets;
+		}
+
+		if ($expr = $this->parseExpression()) {
+			$this->expect(';');
+			return $expr;
+		}
 	}
 
 	/**
@@ -394,14 +438,128 @@ class Parser extends AbstractParser {
 	 */
 	public function parseValue() {
 
-		$value = $this->getToken();
-
-		if (!in_array($value->type, ['NUMBER', 'STRING'])) {
-			$this->error("Expected value", $value);
+		if (!$this->nextIs(['NUMBER', 'STRING'])) {
+			return false;
 		}
 
-		return $value;
+		$value = $this->getToken();
+
+		return Node::fromToken($value);
 	}
+
+	/**
+	 * 
+	 */
+	public function parseControlStatement() {
+
+		if (!$this->nextIs(["IF", "FOR", "WHILE"])) {
+			return false;
+		}
+
+		$ctrl = $this->getToken();
+		$ctrlNode = Node::fromToken($ctrl);
+
+		$this->expect('(');
+
+			if ($ctrl->type == 'IF' || $ctrl->type == 'WHILE') {
+				$ctrlNode->condition = $this->parseExpression();
+			} elseif ($ctrl->type == 'FOR') {
+				$ctrlNode->condition = $this->parseForInit();
+			}
+
+		$this->expect(')');
+		$this->expect('{');
+			$ctrlNode->body = $this->parseStatementList(false);
+		$this->expect('}');
+
+		if ($ctrl->type == 'IF' && $this->nextIs('ELSE')) {
+			$this->expect('{');
+				$ctrlNode->else = $this->parseStatementList(false);
+			$this->expect('}');
+		}
+
+		return $ctrlNode;
+	}
+
+	/**
+	 * 
+	 */
+	public function parseExpression() {
+
+		$lhs = $this->parsePostfix(false);
+
+		//Assignment expression
+		if ($lhs && $this->nextIs('=')) {
+			return $this->parseAssignmentExpression($lhs);
+		}
+
+		$lhs = $lhs ?: $this->parsePostfix(true);
+		//$lhs = $lhs ?: $this->parseUnary();
+		$lhs = $lhs ?: $this->parseValue();
+
+		if (!$lhs) {
+			return false;
+		}
+
+		return $lhs;
+
+		//$next = $this->getToken();
+
+
+		//Primary expression
+		$primaryNode = Node::fromToken($primary);
+		//NEED TO ADD SYMBOL CHECKING
+
+		//Postfix
+
+		return $primaryNode;
+	}
+
+	/**
+	 * Parse postfix expression
+	 * $fncall determines whether to allow function calls for a normal expression
+	 * omitting them allows for parsing LHS of an assignment expression
+	 *
+	 * @param bool $fncall
+	 *
+	 * @return Node
+	 */
+	public function parsePostfix($fncall = true) {
+
+		if (!$this->nextIs(['IDENTIFIER', 'THIS'])) {
+			return false;
+		}
+
+		$ident = $this->getToken();
+		\xdebug_break();
+
+		//Add array access
+
+		//Add object traversal
+
+		//
+		return false;
+	}
+
+	/**
+	 *
+	 */
+	public function parseAssignmentExpression($lhs) {
+
+		//Do symbol checking here
+
+		$equal = $this->getToken();
+		$assignNode = Node::fromToken($equal);
+
+		$expression = $this->parseExpression();
+
+		$assignNode->left = $lhs;
+		$assignNode->right = $rhs;
+
+		return $assignNode;
+	}
+
+
 }
 
 

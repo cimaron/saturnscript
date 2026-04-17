@@ -199,6 +199,10 @@ class TargetC extends Target {
 
 			$this->code(") {\n");
 
+				$this->depth++;
+				$this->generateStatements($member->children);
+				$this->depth--;
+
 			$this->code($tab . "}\n\n");
 		}
 	}
@@ -213,6 +217,56 @@ class TargetC extends Target {
 		$out = sprintf("%s %s", $type, $param->text);
 
 		return $out;
+	}
+
+	/**
+	 *
+	 */
+	public function generateStatements($statements) {
+
+		foreach ($statements as $statement) {
+			$this->generateStatement($statement);
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function generateStatement($statement) {
+
+		switch ($statement->type) {
+			case 'IF':
+				$this->generateIf($statement);
+				break;
+			default:
+				$tab = str_repeat("\t", $this->depth);
+				$this->code($tab . "/* not implemented */\n");
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function generateIf($if) {
+
+		$tab = str_repeat("\t", $this->depth);
+
+		$this->code($tab . sprintf("if ("));
+			$this->generateExpression($if->condition);
+		$this->code(") {\n");
+
+			$this->depth++;
+			$this->generateStatements($if->body);
+			$this->depth--;
+
+		$this->code($tab . sprintf("}\n"));
+	}
+
+	/**
+	 *
+	 */
+	public function generateExpression($expression) {
+		$this->code('/* @todo expression */');
 	}
 }
 

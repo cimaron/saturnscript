@@ -23,6 +23,11 @@ class Lexer {
 
 		'TYPE' => '((u|s)(8|16|32))|(fx(8|16|24))',
 
+		'IF' => 'if',
+		'FOR' => 'for',
+		'WHILE' => 'while',
+		'ELSE' => 'else',
+
 		'IDENTIFIER' => "[a-zA-Z_][a-zA-Z_0-9]*",
 		'NUMBER' => '\d+',
 		
