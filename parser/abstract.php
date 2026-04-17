@@ -61,7 +61,7 @@ class AbstractParser {
 	public function expect($type) {
 
 		if (!$this->nextIs($type)) {
-			$this->error("Expected '$type'", implode("', '", $type));
+			$this->error(sprintf("Expected '%s'", implode("', '", (array)$type)), $this->getToken());
 		}
 
 		return $this->getToken();
