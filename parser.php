@@ -222,17 +222,13 @@ class Parser extends AbstractParser {
 		//Add to symbol table
 		$this->namespace->addSymbol($letNode->text, $letNode);
 
-		$next = $this->getToken();
-		if ($next->type == ";" || $next->type == ",") {
-			$this->push($next);
+		if ($this->nextIs([';', ','])) {
 			return $letNode;
 		}
 
-		if ($next->type != "=") {
-			$this->error("Expected '='", $next);
-		}
+		$this->expect('=');
 
-		$letNode->value = $this->parseValue();
+		$letNode->value = $this->expect(['NUMBER', 'STRING']);
 
 		return $letNode;
 	}
