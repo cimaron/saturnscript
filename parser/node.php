@@ -19,11 +19,16 @@ class Node extends Base {
 	public $children = [];
 
 	public static function fromToken($token, $type = null) {
-		$node = new Node($type ?? $token->type, $token);
+		$node = new Node($token, $type);
 		return $node;
 	}
 
-	public function __construct($type, $token = null) {
+	public function __construct($token, $type = null) {
+
+		if (is_string($token)) {
+			[$token, $type] = [null, $token];
+		}
+
 		$this->type = $type;
 
 		if ($token !== null) {
@@ -46,4 +51,31 @@ class Node extends Base {
 		return $vars;
 	}
 }
+
+
+class ControlNode extends Node {
+	public $condition;
+	public $body;
+	public $else;
+}
+
+class ExpressionNode extends Node {
+	public $typedef;
+}
+
+class PrimaryNode extends ExpressionNode {
+	public $value;
+	public $text;
+}
+
+class AssignNode extends ExpressionNode {
+	public $target;
+	public $value;
+}
+
+class AccessNode extends ExpressionNode {
+	public $index;
+	public $property;
+}
+
 

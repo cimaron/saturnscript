@@ -37,7 +37,7 @@ class Parser extends AbstractParser {
 					die("Can't handle that yet");
 				}
 
-				$node = Node::fromToken($token, 'IMPORT');
+				$node = new Node($token, 'IMPORT');
 				$node->text = $matches[1];
 
 				/*
@@ -161,7 +161,7 @@ class Parser extends AbstractParser {
 
 		$this->expect("=");
 
-		$constNode = Node::fromToken($identifier, 'CONST');
+		$constNode = new Node($identifier, 'CONST');
 		//$node->text = $identifier->text;
 
 		$constNode->value = $this->expect(['NUMBER', 'STRING']);
@@ -206,7 +206,7 @@ class Parser extends AbstractParser {
 			$this->error("$identifier->text already defined", $identifier);
 		}
 
-		$letNode = Node::fromToken($identifier, 'LET');
+		$letNode = new Node($identifier, 'LET');
 
 		$this->expect(":");
 
@@ -252,7 +252,7 @@ class Parser extends AbstractParser {
 
 		$this->expect("{");
 
-			$node = Node::fromToken($identifier, 'CLASS');
+			$node = new Node($identifier, 'CLASS');
 
 			//Add to symbol table
 			$this->namespace->addSymbol($node->text, $node);
@@ -279,7 +279,7 @@ class Parser extends AbstractParser {
 		}
 
 		$ident = $this->getToken();
-		$node = Node::fromToken($ident);
+		$node = new Node($ident);
 
 		//switch to method
 		if ($this->nextIs('(')) {
@@ -311,7 +311,7 @@ class Parser extends AbstractParser {
 	public function parseMethod() {
 
 		$ident = $this->getToken();
-		$node = Node::fromToken($ident);
+		$node = new Node($ident);
 
 		$this->expect("(");
 
@@ -379,7 +379,7 @@ class Parser extends AbstractParser {
 			$this->error("Expected type", $type);
 		}
 
-		$node = Node::fromToken($ident);
+		$node = new Node($ident);
 		$node->typedef = $type;
 
 		return $node;
@@ -440,7 +440,7 @@ class Parser extends AbstractParser {
 
 		$value = $this->getToken();
 
-		return Node::fromToken($value);
+		return new PrimaryNode($value);
 	}
 
 	/**
@@ -453,7 +453,7 @@ class Parser extends AbstractParser {
 		}
 
 		$ctrl = $this->getToken();
-		$ctrlNode = Node::fromToken($ctrl);
+		$ctrlNode = new ControlNode($ctrl);
 
 		$this->expect('(');
 
@@ -503,7 +503,7 @@ class Parser extends AbstractParser {
 
 
 		//Primary expression
-		$primaryNode = Node::fromToken($primary);
+		$primaryNode = new Node($primary);
 		//NEED TO ADD SYMBOL CHECKING
 
 		//Postfix
@@ -545,12 +545,12 @@ class Parser extends AbstractParser {
 		//Do symbol checking here
 
 		$equal = $this->getToken();
-		$assignNode = Node::fromToken($equal);
+		$assignNode = new AssignNode($equal);
 
 		$expression = $this->parseExpression();
 
-		$assignNode->left = $lhs;
-		$assignNode->right = $rhs;
+		$assignNode->target = $lhs;
+		$assignNode->value = $rhs;
 
 		return $assignNode;
 	}
