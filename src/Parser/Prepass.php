@@ -1,5 +1,6 @@
 <?php
 
+namespace SaturnScript\Parser;
 
 
 class Prepass extends Parser {

@@ -1,5 +1,8 @@
 <?php
-require_once 'base.php';
+
+namespace SaturnScript\Lexer;
+
+use SaturnScript\Base\Base;
 
 
 class Token extends Base {

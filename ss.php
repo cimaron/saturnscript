@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-require_once 'parser.php';
+require_once 'src/autoload.php';
 
 if ($argc < 2) {
 	echo "Usage: ss [file]";
@@ -20,7 +20,7 @@ $input = file_get_contents($filename);
 $name = basename($filename);
 $name = substr($name, 0, strpos($name, '.'));
 
-$parser = new Parser($name, $input);
+$parser = new \SaturnScript\Parser\Parser($name, $input);
 try {
 	$ast = $parser->parse();
 } catch (\Exception $e) {

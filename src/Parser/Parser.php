@@ -1,9 +1,6 @@
 <?php
-require_once 'lexer.php';
-require_once 'parser/abstract.php';
-require_once 'parser/namespace.php';
-require_once 'parser/type.php';
-require_once 'parser/node.php';
+
+namespace SaturnScript\Parser;
 
 
 class Parser extends AbstractParser {
@@ -554,10 +551,5 @@ class Parser extends AbstractParser {
 
 		return $assignNode;
 	}
-
-
 }
-
-
-require_once 'parser/prepass.php';
 

@@ -1,5 +1,6 @@
 <?php
-require_once 'target.php';
+
+namespace SaturnScript\Target;
 
 
 class TargetC extends Target {

@@ -1,5 +1,8 @@
 <?php
 
+namespace SaturnScript\Base;
+
+
 class Base {
 
 	public $lineno;

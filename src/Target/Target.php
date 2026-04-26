@@ -1,5 +1,8 @@
 <?php
 
+namespace SaturnScript\Target;
+
+
 class Target {
 
 	public $namespace;

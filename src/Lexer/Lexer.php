@@ -1,5 +1,6 @@
 <?php
-require_once 'token.php';
+
+namespace SaturnScript\Lexer;
 
 
 class Lexer {

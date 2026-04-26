@@ -1,5 +1,8 @@
 <?php
-require_once __DIR__ . '/../base.php';
+
+namespace SaturnScript\Parser;
+
+use SaturnScript\Base\Base;
 
 
 class Node extends Base {

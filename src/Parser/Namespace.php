@@ -1,5 +1,7 @@
 <?php
 
+namespace SaturnScript\Parser;
+
 
 class NamespaceObject {
 
