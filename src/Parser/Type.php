@@ -28,19 +28,6 @@ class Type {
 	}
 }
 
-class Types {
-
-	public $list = [];
-
-	public function get($name) {
-		return $this->list[$name] ?? Type::$builtins[$name] ?? null;
-	}
-
-	public function add($name, $type) {
-		$this->list[$name] = $type;
-		return $type;
-	}
-}
 
 Type::$builtins['void'] = new Type('void');
 

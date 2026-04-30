@@ -44,8 +44,7 @@ try {
 	if (!$o || $o == 'ast') {
 		//print_r($ast);
 	} elseif ($o == 'c') {
-		require_once 'target/c.php';
-		$code = new TargetC();
+		$code = new \SaturnScript\Target\TargetC();
 		$code->generate($ast);
 		$outdir = 'out_c';
 

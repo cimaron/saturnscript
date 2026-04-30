@@ -22,7 +22,7 @@ class AbstractParser {
 
 	public function __construct($name, $text) {
 		$this->name = $name;
-		$this->lexer = new Lexer($text);
+		$this->lexer = new \SaturnScript\Lexer\Lexer($text);
 		//$this->map = (array)json_decode(file_get_contents("ss_map.json"));
 	}
 
