@@ -11,6 +11,7 @@
 
 namespace SaturnScript\Parser;
 
+use SaturnScript\Lexer\Lexer;
 use SaturnScript\Parser\Node\Node;
 
 
@@ -20,16 +21,53 @@ class AbstractParser {
 	public $stack = [];
 	public $ast;
 	public $comments = [];
+	public $state;
+	public $includeDir = [];
 
-
-	public function __construct($name, $text) {
-		$this->name = $name;
-		$this->lexer = new \SaturnScript\Lexer\Lexer($text);
+	/**
+	 * Constructor
+	 */
+	public function __construct() {
+		$this->state = new \stdClass;
 		//$this->map = (array)json_decode(file_get_contents("ss_map.json"));
 	}
 
 	/**
+	 * Open new file
 	 *
+	 * @param string $relpath
+	 */
+	public function openFile($relpath) {
+
+		if ($relpath[0] == "/") {
+			$fullpath = $relpath;
+		} else {
+
+			$includeDir = array_merge([getcwd()], $this->includeDir);
+
+			foreach ($includeDir as $dir) {
+				if (file_exists($dir . '/' . $relpath)) {
+					$fullpath = $dir . '/' . $relpath;
+					break;
+				}
+			}
+		}
+
+		if (!$fullpath || !file_exists($fullpath)) {
+			$this->error("File not found: '$relpath'");
+		}
+
+		$this->state->filename = basename($fullpath);
+
+		$text = file_get_contents($fullpath);
+
+		$this->lexer = new Lexer($text);
+	}
+
+	/**
+	 * Get Token
+	 *
+	 * @return Token
 	 */
 	public function getToken() {
 
@@ -85,7 +123,7 @@ class AbstractParser {
 	}
 
 	public function error($str, $token = null) {
-		throw new \Exception($token ? $token->error($str) : $str);
+		throw new \Exception($this->state->filename . ' ' . ($token ? $token->error($str) : $str));
 	}
 }
 

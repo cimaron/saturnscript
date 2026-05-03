@@ -21,18 +21,15 @@ $options = getopt("o:", [], $rest_index);
 
 
 $filename = $argv[$rest_index];
-if (!file_exists($filename)) {
-	echo "file not found: $filename";
-	exit;
-}
 
-$input = file_get_contents($filename);
-$name = basename($filename);
-$name = substr($name, 0, strpos($name, '.'));
 
-$parser = new \SaturnScript\Parser\Parser($name, $input);
 try {
+
+	$parser = new SaturnScript\Parser\Parser();
+	$parser->openFile($filename);
+
 	$ast = $parser->parse();
+
 } catch (\Exception $e) {
 	die("Parse error at " . $e->getMessage());
 }

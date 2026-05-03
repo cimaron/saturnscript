@@ -104,6 +104,7 @@ class Parser extends AbstractParser {
 
 		$this->expect("}");
 
+		$nsNode->text = $this->namespace->name;
 		$nsNode->types = $this->namespace->types;
 		$nsNode->symbols = $this->namespace->symbols;
 

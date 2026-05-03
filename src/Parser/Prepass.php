@@ -19,6 +19,8 @@ class Prepass extends Parser {
 	public function __construct($parser) {
 		$this->lexer = clone $parser->lexer;
 		$this->namespace = new NamespaceObject($parser->namespace->name);
+		$this->state = new \stdClass;
+		$this->state->filename = $parser->state->filename;
 	}
 
 	/**
