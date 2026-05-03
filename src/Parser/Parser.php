@@ -11,6 +11,11 @@
 
 namespace SaturnScript\Parser;
 
+use SaturnScript\Parser\Node\AssignNode;
+use SaturnScript\Parser\Node\ControlNode;
+use SaturnScript\Parser\Node\Node;
+use SaturnScript\Parser\Node\PrimaryNode;
+
 
 class Parser extends AbstractParser {
 

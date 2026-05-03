@@ -9,7 +9,7 @@
  * See LICENSE.txt for full license text
  */
 
-namespace SaturnScript\Parser;
+namespace SaturnScript\Parser\Node;
 
 use SaturnScript\Base\Base;
 
@@ -41,7 +41,7 @@ class Node extends Base {
 			[$token, $type] = [null, $token];
 		}
 
-		$this->type = $type;
+		$this->type = $type ?: $token->type;
 
 		if ($token !== null) {
 			$this->setPosition($token->lineno, $token->charno);
@@ -63,32 +63,4 @@ class Node extends Base {
 		return $vars;
 	}
 }
-
-
-class ControlNode extends Node {
-	public $condition;
-	public $body;
-	public $else;
-}
-
-class ExpressionNode extends Node {
-	public $typedef;
-}
-
-class PrimaryNode extends ExpressionNode {
-	public $value;
-	public $text;
-}
-
-class AssignNode extends ExpressionNode {
-	public $target;
-	public $value;
-}
-
-class AccessNode extends ExpressionNode {
-	public $object;
-	public $index;    //array
-	public $property; //member
-}
-
 
