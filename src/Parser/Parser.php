@@ -262,23 +262,27 @@ class Parser extends AbstractParser {
 			$this->error("$identifier->text already defined", $identifier);
 		}
 
+		$this->namespace->addType($identifier->text);
+
+		$this->state->inClass = $identifier->text;
+
 		$this->expect("{");
 
-			$node = new Node($identifier, 'CLASS');
+			$classNode = new Node($identifier, 'CLASS');
 
 			//Add to symbol table
-			$this->namespace->addSymbol($node->text, $node);
-			$type = new Type($node->text);
+			$this->namespace->addSymbol($classNode->text, $classNode);
+			$type = new Type($classNode->text);
 
 				while ($member = $this->parseMember()) {
-					$node->push($member);
+					$classNode->push($member);
 				}
-			
-			$this->namespace->addType($node->text);
 
 		$this->expect("}");
 
-		return $node;
+		$this->state->inClass = false;
+
+		return $classNode;
 	}
 
 	/**
