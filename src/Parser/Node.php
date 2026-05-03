@@ -86,8 +86,9 @@ class AssignNode extends ExpressionNode {
 }
 
 class AccessNode extends ExpressionNode {
-	public $index;
-	public $property;
+	public $object;
+	public $index;    //array
+	public $property; //member
 }
 
 

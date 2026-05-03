@@ -243,11 +243,15 @@ class TargetC extends Target {
 	public function generateStatement($statement) {
 
 		switch ($statement->type) {
+
 			case 'IF':
 				$this->generateIf($statement);
 				break;
+
 			default:
-				$this->code($this->indent() . "/* not implemented */\n");
+				$this->code($this->indent());
+				$this->generateExpression($statement);
+				$this->code(";\n");
 		}
 	}
 
@@ -271,7 +275,70 @@ class TargetC extends Target {
 	 *
 	 */
 	public function generateExpression($expression) {
-		$this->code('/* @todo expression */');
+
+		$this->code("(");
+
+		switch ($expression->type) {
+
+			case '=':
+				$this->generateAssignExpression($expression);
+				break;
+
+			case 'IDENTIFIER':
+				$this->generatePrimaryExpression($expression);
+				break;
+
+			case '.':
+				$this->generatePostfixExpression($expression);
+				break;
+
+			default:
+				$this->code('[expression]');
+		}
+
+		$this->code(")");
 	}
+
+	/**
+	 *
+	 */
+	public function generateAssignExpression($expression) {
+
+		$this->generatePostfixExpression($expression->target);
+		$this->code(' = ');
+		$this->generateExpression($expression->value);
+	}
+
+	/**
+	 *
+	 */
+	public function generatePostfixExpression($expression) {
+
+		switch ($expression->type) {
+
+			case '.':
+				$this->code(sprintf("%s->%s", $expression->object->text, $expression->property->text));
+				return;
+		}
+
+		$this->code("[object]");
+	}
+
+	/**
+	 *
+	 */
+	public function generatePrimaryExpression($expression) {
+
+		switch ($expression->type) {
+			case 'IDENTIFIER':
+				$this->code($expression->text);
+				break;
+
+			 default:
+			 	$this->code('[PRIMARY]');
+		}
+
+	}
+
 }
 

@@ -528,19 +528,44 @@ class Parser extends AbstractParser {
 	 */
 	public function parsePostfix($fncall = true) {
 
+		if (!$this->state->inClass && $this->nextIs('THIS')) {
+			$this->error("Using 'this' outside of class context");
+		}
+
 		if (!$this->nextIs(['IDENTIFIER', 'THIS'])) {
 			return false;
 		}
 
 		$ident = $this->getToken();
-		\xdebug_break();
 
-		//Add array access
+		if ($ident->type == 'THIS') {
 
-		//Add object traversal
+			$typename = $this->state->inClass;
+			$type = $this->namespace->getSymbol($typename);
 
-		//
-		return false;
+		/*
+		} else {
+			$symbol = $this->namespace->getSymbol($ident->text);
+			if (!$symbol) {
+				$this->error("'$ident->text' is not defined");
+			}
+			*/
+		}
+
+//		exit;
+
+		//object traversal
+		if ($this->nextIs('.')) {
+			$objectNode = new Node($ident);
+			$accessNode = $this->parseMemberAccess($objectNode);
+			return $accessNode;
+		}
+
+		//array access
+
+		$exprNode = new PrimaryNode($ident);
+
+		return $exprNode;
 	}
 
 	/**
@@ -556,9 +581,41 @@ class Parser extends AbstractParser {
 		$expression = $this->parseExpression();
 
 		$assignNode->target = $lhs;
-		$assignNode->value = $rhs;
+		$assignNode->value = $expression;
 
 		return $assignNode;
+	}
+
+	/**
+	 *
+	 */
+	public function parseMemberAccess($objectNode) {
+
+		//First check if it's an object
+		$classSymbol = $this->namespace->getSymbol($this->state->inClass);
+		
+		//Get symbol to check for members
+		if (!$this->state->preprocess) {
+		}
+
+		$access = $this->expect('.');
+		$accessNode = new Node($access);
+
+		$property = $this->expect('IDENTIFIER');
+		$accessNode->property = new Node($property);
+
+		//Check member is part of symbol and type
+		if (!$this->state->preprocess) {
+		}
+
+		if ($this->nextIs('.')) {
+			$accessNode->object = $this->parseMemberAccess($objectNode);
+			return $accessNode;
+		}
+
+		$accessNode->object = $objectNode;
+
+		return $accessNode;
 	}
 }
 

@@ -38,6 +38,8 @@ class Lexer {
 		'WHILE' => 'while',
 		'ELSE' => 'else',
 
+		'THIS' => 'this',
+
 		'IDENTIFIER' => "[a-zA-Z_][a-zA-Z_0-9]*",
 		'NUMBER' => '\d+',
 		
@@ -56,6 +58,7 @@ class Lexer {
 
 		'++' => '\+\+',
 		'--' => '\-\-',
+		'.' => '\.',
 	];
 
 	public function __construct($text) {
