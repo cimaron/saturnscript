@@ -22,6 +22,10 @@ class TargetC extends Target {
 		$this->output($str, 'h');
 	}
 
+	public function indent($offset = 0, $char = "\t") {
+		return str_repeat($char, $this->depth + $offset);
+	}
+
 	public function comment($str, $file = 'c') {
 
 		if (strpos($str, "\n") !== false) {
@@ -142,9 +146,7 @@ class TargetC extends Target {
 
 		$cType = $this->getType($type);
 
-		$tab = str_repeat("\t", $this->depth);
-
-		$this->code($tab . sprintf("%s %s;\n\n", $cType, $name));
+		$this->code($this->indent() . sprintf("%s %s;\n\n", $cType, $name));
 	}
 
 	/**
@@ -154,15 +156,13 @@ class TargetC extends Target {
 
 		$name = sprintf("__%s__%s", $this->namespace, $class->text);
 
-		$tab = str_repeat("\t", $this->depth);
-
-		$this->code($tab . "typedef struct {\n");
+		$this->code($this->indent() . "typedef struct {\n");
 
 			$this->depth++;
 			$this->generateClassMembers($class);
 			$this->depth--;
 
-		$this->code($tab . "} $name;\n\n");
+		$this->code($this->indent() . "} $name;\n\n");
 
 		$this->generateClassMethods($class);
 	}
@@ -179,8 +179,7 @@ class TargetC extends Target {
 				continue;
 			}
 
-			$tab = str_repeat("\t", $this->depth);
-			$this->code($tab . sprintf("%s %s;\n", $type, $member->text));
+			$this->code($this->indent() . sprintf("%s %s;\n", $type, $member->text));
 		}
 	}
 
@@ -196,8 +195,7 @@ class TargetC extends Target {
 				continue;
 			}
 
-			$tab = str_repeat("\t", $this->depth);
-			$this->code($tab . sprintf("%s __%s__%s(", $type, $this->namespace, $member->text));
+			$this->code($this->indent() . sprintf("%s __%s__%s(", $type, $this->namespace, $member->text));
 
 				//arguments
 				$params = [];
@@ -213,7 +211,7 @@ class TargetC extends Target {
 				$this->generateStatements($member->children);
 				$this->depth--;
 
-			$this->code($tab . "}\n\n");
+			$this->code($this->indent() . "}\n\n");
 		}
 	}
 
@@ -249,8 +247,7 @@ class TargetC extends Target {
 				$this->generateIf($statement);
 				break;
 			default:
-				$tab = str_repeat("\t", $this->depth);
-				$this->code($tab . "/* not implemented */\n");
+				$this->code($this->indent() . "/* not implemented */\n");
 		}
 	}
 
@@ -259,9 +256,7 @@ class TargetC extends Target {
 	 */
 	public function generateIf($if) {
 
-		$tab = str_repeat("\t", $this->depth);
-
-		$this->code($tab . sprintf("if ("));
+		$this->code($this->indent() . sprintf("if ("));
 			$this->generateExpression($if->condition);
 		$this->code(") {\n");
 
@@ -269,7 +264,7 @@ class TargetC extends Target {
 			$this->generateStatements($if->body);
 			$this->depth--;
 
-		$this->code($tab . sprintf("}\n"));
+		$this->code($this->indent() . sprintf("}\n"));
 	}
 
 	/**
