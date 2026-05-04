@@ -292,6 +292,13 @@ class TargetC extends Target {
 				$this->generatePostfixExpression($expression);
 				break;
 
+			case '+':
+			case '-':
+			case '*':
+			case '/':
+				$this->generateBinaryExpression($expression);
+				break;
+
 			default:
 				$this->code('[expression]');
 		}
@@ -340,5 +347,20 @@ class TargetC extends Target {
 
 	}
 
+	/**
+	 *
+	 */
+	public function generateBinaryExpression($expression) {
+
+		$this->code("(");
+
+		$this->generateExpression($expression->left);
+
+		$this->code(sprintf(" %s ", $expression->type));
+
+		$this->generateExpression($expression->right);
+
+		$this->code(")");
+	}
 }
 

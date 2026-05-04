@@ -498,6 +498,13 @@ class Parser extends AbstractParser {
 	 */
 	public function parseExpression() {
 
+		if ($this->nextIs('(')) {
+			$this->expect('(');
+			$expression = $this->parseExpression();
+			$this->expect(')');
+			return $expression;
+		}
+
 		$lhs = $this->parsePostfix(false);
 
 		//Assignment expression
@@ -506,6 +513,11 @@ class Parser extends AbstractParser {
 		}
 
 		$lhs = $lhs ?: $this->parsePostfix(true);
+
+		if ($this->nextIs(['+', '-', '*', '/'])) {
+			return $this->parseBinaryExpression($lhs);
+		}
+
 		//$lhs = $lhs ?: $this->parseUnary();
 		$lhs = $lhs ?: $this->parseValue();
 
@@ -626,6 +638,23 @@ class Parser extends AbstractParser {
 		$accessNode->object = $objectNode;
 
 		return $accessNode;
+	}
+
+	/**
+	 *
+	 */
+	public function parseBinaryExpression($lhs) {
+
+		$operator = $this->expect(['+', '-', '*', '/']);
+
+		$rhs = $this->parseExpression();
+
+		$binaryNode = new Node($operator);
+
+		$binaryNode->left = $lhs;
+		$binaryNode->right = $rhs;
+
+		return $binaryNode;
 	}
 }
 
