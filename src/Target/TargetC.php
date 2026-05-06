@@ -142,9 +142,9 @@ class TargetC extends Target {
 	public function generateLet($let) {
 
 		$name = sprintf("__%s__%s", $this->namespace, $let->text);
-		$type = $let->typedef->text;
+		$type = $let->typedef;
 
-		$cType = $this->getType($type);
+		$cType = $this->getType($type->name);
 
 		$this->code($this->indent() . sprintf("%s %s;\n\n", $cType, $name));
 	}
@@ -173,7 +173,8 @@ class TargetC extends Target {
 	public function generateClassMembers($class) {
 
 		foreach ($class->children as $member) {
-			$type = $this->getType($member->typedef->text);
+
+			$type = $this->getType($member->typedef->name);
 
 			if (!$type || $member->params !== null) {
 				continue;
@@ -189,7 +190,7 @@ class TargetC extends Target {
 	public function generateClassMethods($class) {
 
 		foreach ($class->children as $member) {
-			$type = $this->getType($member->typedef->text);
+			$type = $this->getType($member->typedef->name);
 
 			if (!$type || $member->params === null) {
 				continue;
@@ -220,7 +221,7 @@ class TargetC extends Target {
 	 */
 	public function generateClassMethodArgument($param) {
 
-		$type = $this->getType($param->typedef->text);
+		$type = $this->getType($param->typedef->name);
 
 		$out = sprintf("%s %s", $type, $param->text);
 

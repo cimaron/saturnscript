@@ -21,6 +21,7 @@ class Prepass extends Parser {
 		$this->namespace = new NamespaceObject($parser->namespace->name);
 		$this->state = new \stdClass;
 		$this->state->filename = $parser->state->filename;
+		$this->state->preprocess = true;
 	}
 
 	/**

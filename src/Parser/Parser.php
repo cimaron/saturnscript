@@ -138,6 +138,27 @@ class Parser extends AbstractParser {
 	}
 
 	/**
+	 * Parse type
+	 */
+	public function parseType() {
+
+		$token = $this->getToken();
+
+		if ($token->type != 'TYPE' && $token->type != 'IDENTIFIER') {
+			$this->error("Expected type", $token);
+		}
+
+		$type = $this->namespace->getType($token->text);
+
+		//Do i need to remove preoprocess for other sections?
+		if (!$this->state->preprocess && !$type) {
+			$this->error("Expected type", $token);
+		}
+
+		return $type;
+	}
+
+	/**
 	 *
 	 */
 	public function parseConstList() {
@@ -222,14 +243,7 @@ class Parser extends AbstractParser {
 
 		$this->expect(":");
 
-		$type = $this->getToken();
-		if ($type->type == 'identifier') {
-			die("@todo implement types");
-		} elseif ($type->type == 'TYPE') {
-			$letNode->typedef = $type;
-		} else {
-			$this->error("Expected type", $type);
-		}
+		$letNode->typedef = $this->parseType();
 
 		//Add to symbol table
 		$this->namespace->addSymbol($letNode->text, $letNode);
@@ -305,16 +319,7 @@ class Parser extends AbstractParser {
 
 		$this->expect(':');
 
-		$type = $this->getToken();
-		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
-			$this->error("Expected type", $type);
-		}
-
-		if (!$this->namespace->getType($type->text)) {
-			$this->error("Expected type", $type);
-		}
-
-		$node->typedef = $type;
+		$node->typedef = $this->parseType();
 
 		$this->expect(';');
 
@@ -334,18 +339,16 @@ class Parser extends AbstractParser {
 			$node->params = $this->parseMethodParams();
 
 		$this->expect(")");
-		$this->expect(":");
 
-			$type = $this->getToken();
-			if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
-				$this->error("Expected type", $type);
-			}
+		if ($ident->text != 'constructor') {
+			
+			$this->expect(":");
+			$node->typedef = $this->parseType();
 
-			if (!$this->namespace->getType($type->text)) {
-				$this->error("Expected type", $type);
-			}
+		} else {
 
-			$node->typedef = $type;
+			$node->typedef = $this->namespace->getType('void');			
+		}
 
 		$this->expect("{");
 
@@ -383,22 +386,13 @@ class Parser extends AbstractParser {
 	public function parseMethodParam() {
 
 		$ident = $this->expect('IDENTIFIER');
+		$paramNode = new Node($ident);
 
 		$this->expect(':');
 
-		$type = $this->getToken();
-		if ($type->type != 'TYPE' && $type->type != 'IDENTIFIER') {
-			$this->error("Expected type", $type);
-		}
+		$paramNode->typedef = $this->parseType();
 
-		if (!$this->namespace->getType($type->text)) {
-			$this->error("Expected type", $type);
-		}
-
-		$node = new Node($ident);
-		$node->typedef = $type;
-
-		return $node;
+		return $paramNode;
 	}
 
 	/**

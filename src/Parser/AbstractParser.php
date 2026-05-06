@@ -29,6 +29,7 @@ class AbstractParser {
 	 */
 	public function __construct() {
 		$this->state = new \stdClass;
+		$this->state->preprocess = false;
 		//$this->map = (array)json_decode(file_get_contents("ss_map.json"));
 	}
 
