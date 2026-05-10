@@ -124,11 +124,9 @@ class Parser extends AbstractParser {
 			return $lets;
 		}
 
-		/*
 		if ($func = $this->parseFunction()) {
-			return $func;
+			return [$func];
 		}
-		*/
 
 		if ($class = $this->parseClass()) {
 			return [$class];
@@ -257,6 +255,44 @@ class Parser extends AbstractParser {
 		$letNode->value = $this->expect(['NUMBER', 'STRING']);
 
 		return $letNode;
+	}
+
+	/**
+	 *
+	 */
+	public function parseFunction() {
+
+		if (!$this->nextIs('FUNCTION')) {
+			return false;
+		}
+
+		$this->getToken(); //consume FUNCTION
+
+		$ident = $this->getToken();
+		$node = new Node($ident, 'FUNCTION');
+
+		$this->expect("(");
+
+			$node->params = $this->parseMethodParams();
+
+		$this->expect(")");
+
+		if (!$this->nextIs(':')) {
+			$node->typedef = $this->namespace->getType('void');			
+		} else {
+			$this->expect(":");
+			$node->typedef = $this->parseType();
+		}
+
+		$this->expect("{");
+
+			$this->parseMethodBody($node);
+
+		$this->expect("}");
+
+		$this->namespace->addSymbol($node->text, $node);
+
+		return $node;
 	}
 
 	/**

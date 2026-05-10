@@ -115,6 +115,10 @@ class TargetC extends Target {
 				$this->generateLet($decl);
 				return;
 
+			case 'FUNCTION':
+				$this->generateFunction($decl);
+				return;
+
 			case 'CLASS':
 				$this->generateClass($decl);
 				return;
@@ -147,6 +151,37 @@ class TargetC extends Target {
 		$cType = $this->getType($type->name);
 
 		$this->code($this->indent() . sprintf("%s %s;\n\n", $cType, $name));
+	}
+
+	/**
+	 * 
+	 */
+	public function generateFunction($function) {
+
+		$type = $this->getType($function->typedef->name);
+
+		if (!$type || $function->params === null) {
+			return;
+		}
+
+		$this->code($this->indent() . sprintf("%s __%s__%s(", $type, $this->namespace, $function->text));
+
+			//arguments
+			$params = [];
+
+			foreach ($function->params as $param) {
+				$params[] = $this->generateFunctionArgument($param);
+			}
+
+			$this->code(implode(", ", $params));
+
+		$this->code(") {\n");
+
+			$this->depth++;
+			$this->generateStatements($function->children);
+			$this->depth--;
+
+		$this->code($this->indent() . "}\n\n");
 	}
 
 	/**
@@ -204,7 +239,7 @@ class TargetC extends Target {
 				$params[] = sprintf("%s *this", $class->text);
 
 				foreach ($member->params as $param) {
-					$params[] = $this->generateClassMethodArgument($param);
+					$params[] = $this->generateFunctionArgument($param);
 				}
 
 				$this->code(implode(", ", $params));
@@ -222,7 +257,7 @@ class TargetC extends Target {
 	/**
 	 * 
 	 */
-	public function generateClassMethodArgument($param) {
+	public function generateFunctionArgument($param) {
 
 		$type = $this->getType($param->typedef->name);
 
