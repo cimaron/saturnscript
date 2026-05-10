@@ -340,14 +340,11 @@ class Parser extends AbstractParser {
 
 		$this->expect(")");
 
-		if ($ident->text != 'constructor') {
-			
+		if ($ident->text == 'constructor' || !$this->nextIs(':')) {
+			$node->typedef = $this->namespace->getType('void');			
+		} else {
 			$this->expect(":");
 			$node->typedef = $this->parseType();
-
-		} else {
-
-			$node->typedef = $this->namespace->getType('void');			
 		}
 
 		$this->expect("{");
