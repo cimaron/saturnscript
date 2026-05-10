@@ -196,10 +196,13 @@ class TargetC extends Target {
 				continue;
 			}
 
-			$this->code($this->indent() . sprintf("%s __%s__%s(", $type, $this->namespace, $member->text));
+			$this->code($this->indent() . sprintf("%s __%s__%s__%s(", $type, $this->namespace, $class->text, $member->text));
 
 				//arguments
 				$params = [];
+
+				$params[] = sprintf("%s *this", $class->text);
+
 				foreach ($member->params as $param) {
 					$params[] = $this->generateClassMethodArgument($param);
 				}
